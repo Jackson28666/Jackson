@@ -1,13 +1,12 @@
 import os
 import chromadb
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.embeddings import OllamaEmbeddings
-from langchain.vectorstores import Chroma
+from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np
 
 class VectorStoreManager:
     def __init__(self, persist_directory="./chroma_db"):
         self.persist_directory = persist_directory
-        self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=200,
@@ -16,6 +15,8 @@ class VectorStoreManager:
         
         self.client = chromadb.PersistentClient(path=self.persist_directory)
         self.collection_name = "nlp_documents"
+        self.vectorizer = TfidfVectorizer()
+        self.all_chunks = []
         
     def get_or_create_collection(self):
         try:
@@ -49,6 +50,7 @@ class VectorStoreManager:
                 metadatas=all_metadatas,
                 ids=all_ids
             )
+            self.all_chunks = all_chunks
             print(f"Added {len(all_chunks)} chunks to vector store")
         return len(all_chunks)
     
@@ -77,4 +79,5 @@ class VectorStoreManager:
     
     def clear_collection(self):
         self.client.delete_collection(self.collection_name)
+        self.all_chunks = []
         print("Collection cleared")
